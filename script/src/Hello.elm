@@ -9,11 +9,14 @@ import Cli.Program as Program
 import Dict exposing (Dict)
 import FatalError exposing (FatalError)
 import Json.Decode exposing (Decoder)
+import List.Extra
 import Pages.Script as Script exposing (Script)
 
 
 type alias PackageDescription =
-    { name : String, exposedModules : List String }
+    { name : String
+    , exposedModules : List String
+    }
 
 
 packageDescriptionDecoder : Decoder PackageDescription
@@ -60,6 +63,11 @@ readDependencies =
         |> BackendTask.allowFatal
 
 
+findDependencyExposingModule : String -> List PackageDescription -> Maybe PackageDescription
+findDependencyExposingModule moduleName packageDescriptions =
+    List.Extra.find (\packageDescription -> List.member moduleName packageDescription.exposedModules) packageDescriptions
+
+
 run : Script
 run =
     Script.withCliOptions programConfig
@@ -71,5 +79,6 @@ run =
                             |> List.map (\( key, value ) -> getPackageDescription (key ++ "/" ++ value))
                             |> BackendTask.combine
                     )
+                |> BackendTask.map (findDependencyExposingModule moduleName)
                 |> BackendTask.andThen (\s -> Script.log (Debug.toString s))
         )
