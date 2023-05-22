@@ -1,11 +1,12 @@
 module Hello exposing (run)
 
-import BackendTask
+import BackendTask exposing (BackendTask)
+import BackendTask.File
 import BackendTask.Http
 import Cli.Option as Option
 import Cli.OptionsParser as OptionsParser
 import Cli.Program as Program
-import Dict
+import Dict exposing (Dict)
 import FatalError exposing (FatalError)
 import Json.Decode exposing (Decoder)
 import Pages.Script as Script exposing (Script)
@@ -44,8 +45,18 @@ programConfig =
 getPackageDescription : String -> BackendTask.BackendTask FatalError PackageDescription
 getPackageDescription packageName =
     BackendTask.Http.getJson
-        ("https://package.elm-lang.org/packages/" ++ packageName ++ "/latest/elm.json")
+        ("https://package.elm-lang.org/packages/" ++ packageName ++ "/elm.json")
         packageDescriptionDecoder
+        |> BackendTask.allowFatal
+
+
+readDependencies : BackendTask FatalError (Dict String String)
+readDependencies =
+    BackendTask.File.jsonFile
+        (Json.Decode.at [ "dependencies", "direct" ]
+            (Json.Decode.dict Json.Decode.string)
+        )
+        "elm.json"
         |> BackendTask.allowFatal
 
 
@@ -53,6 +64,12 @@ run : Script
 run =
     Script.withCliOptions programConfig
         (\moduleName ->
-            getPackageDescription moduleName
+            readDependencies
+                |> BackendTask.andThen
+                    (\dependencyDict ->
+                        Dict.toList dependencyDict
+                            |> List.map (\( key, value ) -> getPackageDescription (key ++ "/" ++ value))
+                            |> BackendTask.combine
+                    )
                 |> BackendTask.andThen (\s -> Script.log (Debug.toString s))
         )
