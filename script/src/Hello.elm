@@ -68,6 +68,16 @@ findDependencyExposingModule moduleName packageDescriptions =
     List.Extra.find (\packageDescription -> List.member moduleName packageDescription.exposedModules) packageDescriptions
 
 
+createPrintStatement : String -> Maybe PackageDescription -> String
+createPrintStatement moduleName maybePackageDescription =
+    case maybePackageDescription of
+        Just packageDescription ->
+            "\nPakken som exposer modulen `" ++ moduleName ++ "` er:\n\n    " ++ packageDescription.name
+
+        Nothing ->
+            "\nFant ingen dependencies i elm.json som exposer modulen `" ++ moduleName ++ "`"
+
+
 run : Script
 run =
     Script.withCliOptions programConfig
@@ -80,5 +90,6 @@ run =
                             |> BackendTask.combine
                     )
                 |> BackendTask.map (findDependencyExposingModule moduleName)
-                |> BackendTask.andThen (\s -> Script.log (Debug.toString s))
+                |> BackendTask.map (createPrintStatement moduleName)
+                |> BackendTask.andThen (\printStatement -> Script.log printStatement)
         )
