@@ -2,6 +2,9 @@ module Hello exposing (run)
 
 import BackendTask
 import BackendTask.Http
+import Cli.Option as Option
+import Cli.OptionsParser as OptionsParser
+import Cli.Program as Program
 import Dict
 import FatalError exposing (FatalError)
 import Json.Decode exposing (Decoder)
@@ -29,6 +32,15 @@ exposedModulesDecoder =
         ]
 
 
+programConfig : Program.Config String
+programConfig =
+    Program.config
+        |> Program.add
+            (OptionsParser.build identity
+                |> OptionsParser.with (Option.requiredPositionalArg "Module.Name")
+            )
+
+
 getPackageDescription : String -> BackendTask.BackendTask FatalError PackageDescription
 getPackageDescription packageName =
     BackendTask.Http.getJson
@@ -39,7 +51,8 @@ getPackageDescription packageName =
 
 run : Script
 run =
-    Script.withoutCliOptions
-        (getPackageDescription "elm/html"
-            |> BackendTask.andThen (\s -> Script.log (Debug.toString s))
+    Script.withCliOptions programConfig
+        (\moduleName ->
+            getPackageDescription moduleName
+                |> BackendTask.andThen (\s -> Script.log (Debug.toString s))
         )
