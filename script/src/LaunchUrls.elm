@@ -114,11 +114,13 @@ doAllTheThings : List UrlData -> BackendTask FatalError ()
 doAllTheThings urlData =
     [ printJsCode urlData
     , urlData
-        |> List.map (stageUrl >> openUrl)
+        |> List.map (prodUrl >> openUrl)
+        |> List.reverse
         |> BackendTask.combine
         |> BackendTask.map (always ())
     , urlData
-        |> List.map (prodUrl >> openUrl)
+        |> List.map (stageUrl >> openUrl)
+        |> List.reverse
         |> BackendTask.combine
         |> BackendTask.map (always ())
     ]
