@@ -4,7 +4,8 @@
   "description": "Run script with:",
   "main": "index.js",
   "scripts": {
-    "find-module": "elm-pages run FindModule"
+    "find-module": "elm-pages run FindModule",
+    "launch-urls": "elm-pages run LaunchUrls"
   },
   "author": "",
   "license": "ISC",
