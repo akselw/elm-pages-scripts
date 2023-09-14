@@ -1,0 +1,14 @@
+{
+  "name": "elm-pages-scripts-test",
+  "version": "1.0.0",
+  "description": "Run script with:",
+  "main": "index.js",
+  "scripts": {
+    "find-module": "elm-pages run FindModule"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "elm-pages": "^3.0.8"
+  }
+}
