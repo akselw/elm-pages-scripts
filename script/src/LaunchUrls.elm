@@ -97,16 +97,31 @@ stageUrl { stageDomain, path } =
     "https://" ++ stageDomain ++ path
 
 
-openUrls : List UrlData -> BackendTask FatalError ()
-openUrls urlData =
-    urlData
-        |> List.map
-            (\u ->
-                BackendTask.Custom.run "test2"
-                    (Json.Encode.string (stageUrl u))
-                    (Json.Decode.succeed ())
-                    |> BackendTask.allowFatal
-            )
+prodUrl : UrlData -> String
+prodUrl { prodDomain, path } =
+    "https://" ++ prodDomain ++ path
+
+
+openUrl : String -> BackendTask FatalError ()
+openUrl url =
+    BackendTask.Custom.run "openChrome"
+        (Json.Encode.string url)
+        (Json.Decode.succeed ())
+        |> BackendTask.allowFatal
+
+
+doAllTheThings : List UrlData -> BackendTask FatalError ()
+doAllTheThings urlData =
+    [ printJsCode urlData
+    , urlData
+        |> List.map (stageUrl >> openUrl)
+        |> BackendTask.combine
+        |> BackendTask.map (always ())
+    , urlData
+        |> List.map (prodUrl >> openUrl)
+        |> BackendTask.combine
+        |> BackendTask.map (always ())
+    ]
         |> BackendTask.combine
         |> BackendTask.map (always ())
 
@@ -115,8 +130,4 @@ script : List String -> BackendTask FatalError ()
 script urls =
     urls
         |> parse
-        |> BackendTask.andThen openUrls
-
-
-
---|> BackendTask.andThen printJsCode
+        |> BackendTask.andThen doAllTheThings
