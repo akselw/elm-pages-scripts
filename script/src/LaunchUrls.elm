@@ -1,10 +1,13 @@
 module LaunchUrls exposing (run)
 
 import BackendTask exposing (BackendTask)
+import BackendTask.Custom
 import Cli.Option as Option
 import Cli.OptionsParser as OptionsParser
 import Cli.Program as Program
 import FatalError exposing (FatalError)
+import Json.Decode
+import Json.Encode
 import Pages.Script as Script exposing (Script)
 import Url exposing (Url)
 
@@ -89,8 +92,31 @@ printJsCode urlData =
         |> Script.log
 
 
+stageUrl : UrlData -> String
+stageUrl { stageDomain, path } =
+    "https://" ++ stageDomain ++ path
+
+
+openUrls : List UrlData -> BackendTask FatalError ()
+openUrls urlData =
+    urlData
+        |> List.map
+            (\u ->
+                BackendTask.Custom.run "test2"
+                    (Json.Encode.string (stageUrl u))
+                    (Json.Decode.succeed ())
+                    |> BackendTask.allowFatal
+            )
+        |> BackendTask.combine
+        |> BackendTask.map (always ())
+
+
 script : List String -> BackendTask FatalError ()
 script urls =
     urls
         |> parse
-        |> BackendTask.andThen printJsCode
+        |> BackendTask.andThen openUrls
+
+
+
+--|> BackendTask.andThen printJsCode
