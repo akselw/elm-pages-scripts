@@ -85,11 +85,14 @@ createUrlData url =
 
 printJsCode : List UrlData -> BackendTask FatalError ()
 printJsCode urlData =
-    urlData
-        |> List.map .path
-        |> List.map (\path -> "'" ++ path ++ "',")
-        |> String.join "\n"
-        |> Script.log
+    let
+        jsCode =
+            urlData
+                |> List.map .path
+                |> List.map (\path -> "'" ++ path ++ "',")
+                |> String.join "\n"
+    in
+    Script.log ("\n\nJavaScript-kode:\n" ++ jsCode ++ "\n\n")
 
 
 stageUrl : UrlData -> String
