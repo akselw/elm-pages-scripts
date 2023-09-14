@@ -80,13 +80,17 @@ createUrlData url =
         BackendTask.fail (FatalError.fromString ("'" ++ Url.toString url ++ "' har ikke et gyldig domene"))
 
 
-printResult : List UrlData -> BackendTask FatalError ()
-printResult urlData =
-    Script.log (Debug.toString urlData)
+printJsCode : List UrlData -> BackendTask FatalError ()
+printJsCode urlData =
+    urlData
+        |> List.map .path
+        |> List.map (\path -> "'" ++ path ++ "',")
+        |> String.join "\n"
+        |> Script.log
 
 
 script : List String -> BackendTask FatalError ()
 script urls =
     urls
         |> parse
-        |> BackendTask.andThen printResult
+        |> BackendTask.andThen printJsCode
