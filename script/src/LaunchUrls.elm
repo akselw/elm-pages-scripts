@@ -105,30 +105,34 @@ prodUrl { prodDomain, path } =
     "https://" ++ prodDomain ++ path
 
 
-openUrl : String -> BackendTask FatalError ()
-openUrl url =
-    BackendTask.Custom.run "openChrome"
-        (Json.Encode.string url)
-        (Json.Decode.succeed ())
-        |> BackendTask.allowFatal
+openUrls : List String -> BackendTask FatalError ()
+openUrls urls =
+    case urls of
+        first :: rest ->
+            BackendTask.Custom.run "openChrome"
+                (Json.Encode.string first)
+                (Json.Decode.succeed ())
+                |> BackendTask.allowFatal
+                |> BackendTask.andThen (\_ -> openUrls rest)
+
+        [] ->
+            BackendTask.succeed ()
 
 
 doAllTheThings : List UrlData -> BackendTask FatalError ()
 doAllTheThings urlData =
-    [ printJsCode urlData
-    , urlData
-        |> List.map (prodUrl >> openUrl)
-        |> List.reverse
-        |> BackendTask.combine
-        |> BackendTask.map (always ())
-    , urlData
-        |> List.map (stageUrl >> openUrl)
-        |> List.reverse
-        |> BackendTask.combine
-        |> BackendTask.map (always ())
-    ]
-        |> BackendTask.combine
-        |> BackendTask.map (always ())
+    let
+        stageUrls =
+            urlData
+                |> List.map stageUrl
+
+        prodUrls =
+            urlData
+                |> List.map prodUrl
+    in
+    openUrls stageUrls
+        |> BackendTask.andThen (\_ -> openUrls prodUrls)
+        |> BackendTask.andThen (\_ -> printJsCode urlData)
 
 
 script : List String -> BackendTask FatalError ()
