@@ -119,8 +119,8 @@ openUrls urls =
             BackendTask.succeed ()
 
 
-doAllTheThings : List UrlData -> BackendTask FatalError ()
-doAllTheThings urlData =
+printCodeAndOpenTabs : List UrlData -> BackendTask FatalError ()
+printCodeAndOpenTabs urlData =
     let
         stageUrls =
             urlData
@@ -139,4 +139,4 @@ script : List String -> BackendTask FatalError ()
 script urls =
     urls
         |> parse
-        |> BackendTask.andThen doAllTheThings
+        |> BackendTask.andThen printCodeAndOpenTabs
